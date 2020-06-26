@@ -211,7 +211,7 @@ if (...) then
           local skipThisNode = false
           local n1 = self:getNodeAt(node._x+diagonalOffsets[i].x, node._y)
           local n2 = self:getNodeAt(node._x, node._y+diagonalOffsets[i].y)
-          if ((n1 and n2) and not self:isWalkableAt(n1._x, n1._y, walkable, clearance) and not self:isWalkableAt(n2._x, n2._y, walkable, clearance)) then
+          if (n1 and not self:isWalkableAt(n1._x, n1._y, walkable, clearance)) or (n2 and not self:isWalkableAt(n2._x, n2._y, walkable, clearance)) then
             skipThisNode = true
           end
           if not skipThisNode then neighbours[#neighbours+1] = n end
