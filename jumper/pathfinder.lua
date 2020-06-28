@@ -76,6 +76,9 @@ if (...) then
   -- @tparam[optchain] string|int|func walkable the value for __walkable__ nodes.
   -- If this parameter is a function, it should be prototyped as __f(value)__, returning a boolean:
   -- __true__ when value matches a __walkable__ `node`, __false__ otherwise.
+  -- @tparam[optchain] string|int|func cornerCuttable the value for __cornerCuttable__ nodes.
+  -- If this parameter is a function, it should be prototyped as __f(value)__, returning a boolean:
+  -- __true__ when value matches a __cornerCuttable__ `node`, __false__ otherwise.
   -- @treturn pathfinder a new `pathfinder` instance
   -- @usage
   -- -- Example one
@@ -86,12 +89,13 @@ if (...) then
   --   return value > 0
   -- end
   -- local finder = Pathfinder(myGrid, 'JPS', walkable)
-  function Pathfinder:new(grid, finderName, walkable)
+  function Pathfinder:new(grid, finderName, walkable, cornerCuttable)
     local newPathfinder = {}
     setmetatable(newPathfinder, Pathfinder)
     newPathfinder:setGrid(grid)
     newPathfinder:setFinder(finderName)
     newPathfinder:setWalkable(walkable)
+    newPathfinder:setCornerCuttable(cornerCuttable and cornerCuttable or walkable)
     newPathfinder:setMode('DIAGONAL')
     newPathfinder:setHeuristic('MANHATTAN')
     newPathfinder:setTunnelling(false)
@@ -152,6 +156,7 @@ if (...) then
     assert(Assert.inherits(grid, Grid), 'Wrong argument #1. Expected a \'grid\' object')
     self._grid = grid
     self._grid._eval = self._walkable and type(self._walkable) == 'function'
+    self._grid._evalcorner = self._cornerCuttable and type(self._cornerCuttable) == 'function'
     return self
   end
 
@@ -189,6 +194,34 @@ if (...) then
   -- @usage local walkable = myFinder:getWalkable()
   function Pathfinder:getWalkable()
     return self._walkable
+  end
+
+  --- Sets the __cornerCuttable__ value or function.
+  -- @class function
+  -- @tparam string|int|func cornerCuttable the value for corner-cuttable nodes.
+  -- @treturn pathfinder self (the calling `pathfinder` itself, can be chained)
+  -- @usage
+  -- -- Value '2' is corner-cuttable
+  -- myFinder:setcornerCuttable(2)
+  --
+  -- -- Any value greater than 0 is corner-cuttable
+  -- myFinder:setCornerCuttable(function(n)
+  --   return n>0
+  -- end
+  function Pathfinder:setCornerCuttable(cornerCuttable)
+    assert(Assert.matchType(cornerCuttable,'stringintfunctionnil'),
+      ('Wrong argument #1. Expected \'string\', \'number\' or \'function\', got %s.'):format(type(cornerCuttable)))
+    self._cornerCuttable = cornerCuttable
+    self._grid._evalcorner = type(self._cornerCuttable) == 'function'
+    return self
+  end
+
+  --- Gets the __cornerCuttable__ value or function.
+  -- @class function
+  -- @treturn string|int|func the `cornerCuttable` value or function
+  -- @usage local cornerCuttable = myFinder:getCornerCuttable()
+  function Pathfinder:getCornerCuttable()
+    return self._cornerCuttable
   end
 
   --- Defines the `finder`. It refers to the search algorithm used by the `pathfinder`.

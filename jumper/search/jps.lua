@@ -116,7 +116,7 @@ if (...) then
     end
 
     -- Node do not have parent, we return all neighbouring nodes
-    return finder._grid:getNeighbours(node, finder._walkable, finder._allowDiagonal, finder._tunnel, clearance)
+    return finder._grid:getNeighbours(node, finder._walkable, finder._allowDiagonal, finder._tunnel, finder._cornerCuttable, clearance)
   end
 
   --[[

@@ -126,6 +126,67 @@ if (...) then
     return ((nodeValue == walkable) and hasEnoughClearance)
   end
 
+  --- Checks if `node` at [x,y] is __cornerCuttable__.
+  -- Will check if `node` at location [x,y] both *exists* on the collision map and *is corner-cuttable*
+  -- @class function
+  -- @tparam int x the x-location of the node
+  -- @tparam int y the y-location of the node
+  -- @tparam[opt] string|int|func cornerCuttable the value for corner-cuttable locations in the collision map array.
+  -- Defaults to __false__ when omitted.
+  -- If this parameter is a function, it should be prototyped as __f(value)__ and return a `boolean`:
+  -- __true__ when value matches a __cornerCuttable__ `node`, __false__ otherwise. If this parameter is not given
+  -- while location [x,y] __is valid__, this actual function returns __true__.
+  -- @treturn bool __true__ if `node` exists and is __cornerCuttable__, __false__ otherwise
+  -- @usage
+  -- -- Always true
+  -- print(myGrid:isCornerCuttableAt(2,3))
+  --
+  -- -- True if node at [2,3] collision map value is 0
+  -- print(myGrid:isCornerCuttableAt(2,3,0))
+  --
+  function Grid:isCornerCuttableAt(x, y, cornerCuttable)
+    local nodeValue = self._map[y] and self._map[y][x]
+    if nodeValue then
+      if not cornerCuttable then return true end
+    else
+      return false
+    end
+    if self._evalcorner then
+      return cornerCuttable(nodeValue)
+    end
+    return (nodeValue == cornerCuttable)
+  end
+
+    --- Checks if `node` at [x,y] is __walkable__ or __cornerCuttable__.
+  -- Will check if `node` at location [x,y] both *exists* on the collision map and *is walkable or corner-cuttable*
+  -- @class function
+  -- @tparam int x the x-location of the node
+  -- @tparam int y the y-location of the node
+  -- @tparam[opt] string|int|func walkable the value for walkable locations in the collision map array.
+  -- Defaults to __false__ when omitted.
+  -- If this parameter is a function, it should be prototyped as __f(value)__ and return a `boolean`:
+  -- __true__ when value matches a __cornerCuttable__ `node`, __false__ otherwise. If this parameter is not given
+  -- @tparam[optchain] string|int|func cornerCuttable the value for corner-cuttable locations in the collision map array.
+  -- Defaults to walkable when omitted.
+  -- If this parameter is a function, it should be prototyped as __f(value)__ and return a `boolean`:
+  -- __true__ when value matches a __cornerCuttable__ `node`, __false__ otherwise. If this parameter is not given
+  -- @tparam[optchain] int clearance the amount of clearance needed. Defaults to 1 (normal clearance) when not given.
+  -- while location [x,y] __is valid__, this actual function returns __true__.
+  -- @treturn bool __true__ if `node` exists and is __walkable__ or __cornerCuttable__, __false__ otherwise
+  -- @usage
+  -- -- Always true
+  -- print(myGrid:isWalkableOrCornerCuttableAt(2,3))
+  --
+  -- -- True if node at [2,3] collision map value is 0
+  -- print(myGrid:isWalkableOrCornerCuttableAt(2,3,0))
+  --
+  -- -- True if node at [2,3] collision map value is 0 or 2
+  -- print(myGrid:isWalkableOrCornerCuttableAt(2,3,0,2))
+  --
+  function Grid:isWalkableOrCornerCuttableAt(x, y, walkable, cornerCuttable, clearance)
+    return self:isWalkableAt(x, y, walkable, clearance) or self:isCornerCuttableAt(x, y, cornerCuttable)
+  end
+
   --- Returns the `grid` width.
   -- @class function
   -- @treturn int the `grid` width
@@ -178,13 +239,15 @@ if (...) then
   -- @tparam[optchain] bool allowDiagonal when __true__, allows adjacent nodes are included (8-neighbours).
   -- Defaults to __false__ when omitted.
   -- @tparam[optchain] bool tunnel When __true__, allows the `pathfinder` to tunnel through walls when heading diagonally.
+  -- @tparam[optchain] string|int|func cornerCuttable the value for corner-cuttable locations in the collision map array.
+  -- Defaults to __false__ when omitted.
   -- @tparam[optchain] int clearance When given, will prune for the neighbours set all nodes having a clearance value lower than the passed-in value
   -- Defaults to __false__ when omitted.
   -- @treturn {node,...} an array of nodes neighbouring a given node
   -- @usage
   -- local aNode = myGrid:getNodeAt(5,6)
   -- local neighbours = myGrid:getNeighbours(aNode, 0, true)
-  function Grid:getNeighbours(node, walkable, allowDiagonal, tunnel, clearance)
+  function Grid:getNeighbours(node, walkable, allowDiagonal, tunnel, cornerCuttable, clearance)
     local neighbours = {}
     for i = 1,#straightOffsets do
       local n = self:getNodeAt(
@@ -211,7 +274,8 @@ if (...) then
           local skipThisNode = false
           local n1 = self:getNodeAt(node._x+diagonalOffsets[i].x, node._y)
           local n2 = self:getNodeAt(node._x, node._y+diagonalOffsets[i].y)
-          if (n1 and not self:isWalkableAt(n1._x, n1._y, walkable, clearance)) or (n2 and not self:isWalkableAt(n2._x, n2._y, walkable, clearance)) then
+          if (n1 and not self:isWalkableOrCornerCuttableAt(n1._x, n1._y, walkable, cornerCuttable, clearance)) or
+            (n2 and not self:isWalkableOrCornerCuttableAt(n2._x, n2._y, walkable, cornerCuttable, clearance)) then
             skipThisNode = true
           end
           if not skipThisNode then neighbours[#neighbours+1] = n end
